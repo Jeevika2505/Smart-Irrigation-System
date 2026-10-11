@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Farmer Dashboard | Smart Agricultural Irrigation</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container navbar">
+        <a href="index.html" class="brand" aria-label="AgriFlow home"><span class="brand-mark">A</span><span>AgriFlow</span></a>
+        <nav aria-label="Farmer navigation">
+          <ul class="nav-links">
+            <li><a href="#my-field">My Field</a></li>
+            <li><a href="#my-requests">My Requests</a></li>
+          </ul>
+        </nav>
+        <a class="nav-cta logout-link" href="login.html">Logout</a>
+      </div>
+    </header>
+
+    <main class="dashboard-shell" id="farmer-dashboard">
+      <div class="container">
+        <div class="dashboard-topbar">
+          <div>
+            <span class="eyebrow" style="background: rgba(39,95,155,0.08); color: var(--blue); border: none;">Farmer dashboard</span>
+            <h1 style="margin: 14px 0 0; font-size: clamp(2rem, 3vw, 2.8rem);">Welcome, <span id="farmer-name">Farmer</span></h1>
+          </div>
+          <span class="dashboard-badge badge-farmer">Your field only</span>
+        </div>
+
+        <section class="dashboard-grid">
+          <div class="stat-box farmer-highlight"><small>Field ID</small><strong id="farmer-field-id">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Crop</small><strong id="farmer-crop">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Soil Moisture</small><strong id="farmer-moisture">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Crop Priority</small><strong id="farmer-priority">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Available Reservoir Water</small><strong id="farmer-reservoir">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Field Reachability</small><strong id="farmer-reachability">—</strong></div>
+        </section>
+
+        <p id="farmer-message" class="form-message" role="status" aria-live="polite"></p>
+
+        <section class="panel-grid" id="my-field">
+          <div class="panel">
+            <h3>My Field Details</h3>
+            <div class="summary-box">
+              <div class="summary-row"><span>Farmer Name</span><strong id="farmer-detail-name">Shown above</strong></div>
+              <div class="summary-row"><span>Field ID</span><strong id="farmer-detail-id">Shown above</strong></div>
+              <div class="summary-row"><span>Crop</span><strong id="farmer-detail-crop">Shown above</strong></div>
+              <div class="summary-row"><span>Soil Moisture</span><strong id="farmer-detail-moisture">Shown above</strong></div>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Submit Irrigation Request</h3>
+            <form class="dashboard-form" data-request-type="Routine">
+              <label>Routine Water Quantity (litres)<input name="amount" type="number" min="0.01" step="0.01" required /></label>
+              <button class="button button-primary" type="submit">Submit Routine Request</button>
+            </form>
+            <form class="dashboard-form" data-request-type="Drought Relief">
+              <label>Drought Relief Quantity (litres)<input name="amount" type="number" min="0.01" step="0.01" required /></label>
+              <button class="button button-primary" type="submit">Submit Drought Relief Request</button>
+            </form>
+          </div>
+        </section>
+
+        <section class="panel table-card" id="my-requests">
+          <div class="dashboard-topbar">
+            <h3>My Irrigation Requests</h3>
+            <div><span id="farmer-total-requests">0</span> total · <span id="farmer-pending-requests">0</span> pending</div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Request ID</th><th>Type</th><th>Priority</th><th>Requested</th><th>Allocated</th><th>Remaining</th><th>Status</th></tr></thead>
+              <tbody id="farmer-request-rows"><tr><td colspan="7">Loading your requests…</td></tr></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer"><div class="container"><p>© <span id="year"></span> AgriFlow. Smart irrigation for resilient agriculture.</p></div></footer>
+    <script src="script.js"></script>
+  </body>
+</html>

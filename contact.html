@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact | AgriFlow</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container navbar">
+        <a href="index.html" class="brand" aria-label="AgriFlow home">
+          <span class="brand-mark">A</span>
+          <span>AgriFlow</span>
+        </a>
+
+        <nav aria-label="Main navigation">
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="services.html">Services</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="contact.html" class="active">Contact</a></li>
+          </ul>
+        </nav>
+
+        <a href="login.html" class="nav-cta">Login Portal</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container">
+          <span class="eyebrow" style="background: rgba(255,255,255,0.14); color: #e8f9ef; border: 1px solid rgba(255,255,255,0.18);">Contact us</span>
+          <h1>Let’s design a smarter irrigation system for your farms.</h1>
+          <p>Speak with our team to discuss field automation, water optimization, and irrigation planning strategies.</p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container contact-grid">
+          <form class="contact-form" id="contact-form">
+            <div class="form-grid">
+              <div>
+                <label for="name" style="display:block; margin-bottom:10px; font-weight:700;">Name</label>
+                <input id="name" type="text" placeholder="Your name" />
+              </div>
+              <div>
+                <label for="email" style="display:block; margin-bottom:10px; font-weight:700;">Email</label>
+                <input id="email" type="email" placeholder="name@example.com" />
+              </div>
+            </div>
+
+            <div style="margin-top: 18px;">
+              <label for="company" style="display:block; margin-bottom:10px; font-weight:700;">Organization</label>
+              <input id="company" type="text" placeholder="Farm or cooperative name" />
+            </div>
+
+            <div style="margin-top: 18px;">
+              <label for="message" style="display:block; margin-bottom:10px; font-weight:700;">Message</label>
+              <textarea id="message" placeholder="Tell us about your irrigation needs..."></textarea>
+            </div>
+
+            <button type="submit" class="button button-primary">Send inquiry</button>
+          </form>
+
+          <aside class="contact-card">
+            <span class="tag green">Support</span>
+            <h3>Reach our team</h3>
+            <ul class="contact-list">
+              <li>
+                <span class="icon-wrap" style="width:42px; height:42px; margin:0; font-size:1.2rem;">📍</span>
+                <div><strong>Location</strong><br />Green Valley Research District, Coimbatore</div>
+              </li>
+              <li>
+                <span class="icon-wrap" style="width:42px; height:42px; margin:0; font-size:1.2rem;">📞</span>
+                <div><strong>Call</strong><br />+91 98765 43210</div>
+              </li>
+              <li>
+                <span class="icon-wrap" style="width:42px; height:42px; margin:0; font-size:1.2rem;">✉️</span>
+                <div><strong>Email</strong><br />support@agriflow.in</div>
+              </li>
+            </ul>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> AgriFlow. Smart irrigation for resilient agriculture.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

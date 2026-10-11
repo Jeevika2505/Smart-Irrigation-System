@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About | AgriFlow</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container navbar">
+        <a href="index.html" class="brand" aria-label="AgriFlow home">
+          <span class="brand-mark">A</span>
+          <span>AgriFlow</span>
+        </a>
+
+        <nav aria-label="Main navigation">
+          <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="about.html" class="active">About</a></li>
+            <li><a href="services.html">Services</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+
+        <a href="login.html" class="nav-cta">Login Portal</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="page-hero">
+        <div class="container">
+          <span class="eyebrow" style="background: rgba(255,255,255,0.14); color: #e8f9ef; border: 1px solid rgba(255,255,255,0.18);">About AgriFlow</span>
+          <h1>Smart irrigation starts with data, strategy, and trust.</h1>
+          <p>
+            AgriFlow was built to bring clarity to irrigation planning in regions where water is scarce,
+            crop demand varies, and network reliability matters. It helps teams decide when to irrigate,
+            how much water to distribute, and which fields need priority support.
+          </p>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container info-grid">
+          <article class="info-card">
+            <div class="icon-wrap">🌱</div>
+            <h3>Crop-first approach</h3>
+            <p>Every irrigation decision is shaped by crop priority, soil moisture level, and the urgency of the field request.</p>
+          </article>
+
+          <article class="info-card">
+            <div class="icon-wrap">🛰️</div>
+            <h3>Connected infrastructure</h3>
+            <p>The platform maps every field and canal link to identify which land remains reachable from the reservoir.</p>
+          </article>
+
+          <article class="info-card">
+            <div class="icon-wrap">🧠</div>
+            <h3>Decisions that scale</h3>
+            <p>By centralizing field history and request states, administrators can manage system-wide allocation in real time.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="section highlight-panel">
+        <div class="container highlight-wrap">
+          <div>
+            <span class="eyebrow" style="background: rgba(29,111,66,0.08); color: var(--primary); border: none;">Mission</span>
+            <h2 style="margin: 18px 0 14px;">Sustainable water use for the next generation of farming.</h2>
+            <p style="color: var(--muted); margin: 0;">
+              We believe efficient water management is essential for dependable harvests and resilient food systems.
+              Our system supports administrators, farmers, and field networks with a structure that is intuitive, dependable, and scalable.
+            </p>
+
+            <ul class="details-list">
+              <li><span>✓</span><div><strong>Transparent allocation</strong><p>Every request is tracked and visible through clear allocation records.</p></div></li>
+              <li><span>✓</span><div><strong>Farm resilience</strong><p>Stress conditions like drought relief are prioritized without losing routine planning.</p></div></li>
+              <li><span>✓</span><div><strong>Operational reliability</strong><p>Canal flow status provides early awareness for blocked or restored routes.</p></div></li>
+            </ul>
+          </div>
+
+          <div class="image-card" style="background-image: linear-gradient(180deg, rgba(16, 52, 37, 0.34), rgba(22, 77, 49, 0.18)), url('https://images.unsplash.com/photo-1464226184884-fa52ac8b1bcb?auto=format&fit=crop&w=1200&q=80');"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> AgriFlow. Smart irrigation for resilient agriculture.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>

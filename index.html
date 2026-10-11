@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AgriFlow | Smart Irrigation System</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container navbar">
+        <a href="index.html" class="brand" aria-label="AgriFlow home">
+          <span class="brand-mark">A</span>
+          <span>AgriFlow</span>
+        </a>
+
+        <nav aria-label="Main navigation">
+          <ul class="nav-links">
+            <li><a href="index.html" class="active">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="services.html">Services</a></li>
+            <li><a href="login.html">Login</a></li>
+            <li><a href="contact.html">Contact</a></li>
+          </ul>
+        </nav>
+
+        <a href="login.html" class="nav-cta">Login Portal</a>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div>
+            <span class="eyebrow">Smart Water Management</span>
+            <h1>Grow more with less water and smarter decisions.</h1>
+            <p>
+              AgriFlow helps farmers, field coordinators, and irrigation teams monitor
+              soil moisture, route water intelligently, and prioritize urgent crop
+              needs with a connected canal network and live allocation logic.
+            </p>
+
+            <div class="hero-actions">
+              <a class="button button-primary" href="login.html#admin-login">Admin Login</a>
+              <a class="button button-secondary" href="login.html#farmer-login">Farmer Login</a>
+            </div>
+          </div>
+
+          <div class="hero-panel">
+            <div class="dashboard-card">
+              <div class="system-visual">
+                <div class="pipeline">
+                  <div class="reservoir">RESERVOIR</div>
+                  <div class="pipe pipe-1"></div>
+                  <div class="pipe pipe-2"></div>
+                  <div class="pipe pipe-3"></div>
+                  <div class="pipe pipe-4"></div>
+                  <div class="pipe pipe-5"></div>
+                  <div class="pipe pipe-6"></div>
+                  <div class="node f1">F01</div>
+                  <div class="node f2">F02</div>
+                  <div class="node f3">F03</div>
+                  <div class="node f4">F04</div>
+                </div>
+              </div>
+
+              <div class="hero-metrics">
+                <div class="metric">
+                  <strong>1–3</strong>
+                  <span>Crop priority levels</span>
+                </div>
+                <div class="metric">
+                  <strong>2</strong>
+                  <span>Request types</span>
+                </div>
+                <div class="metric">
+                  <strong>BFS</strong>
+                  <span>Canal reachability</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" style="background: var(--primary-soft); color: var(--primary); border: none;">Why farmers choose us</span>
+            <h2>Built for resilient crop care and efficient irrigation.</h2>
+          </div>
+
+          <div class="features-grid">
+            <article class="feature-card">
+              <div class="icon-wrap">💧</div>
+              <h3>Smart Allocation</h3>
+              <p>Prioritizes urgent field requests and balances distribution based on crop need and soil moisture.</p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon-wrap">🌾</div>
+              <h3>Field Insights</h3>
+              <p>Tracks crop type, field conditions, and irrigation demand for better farm-level planning.</p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon-wrap">🌐</div>
+              <h3>Network Monitoring</h3>
+              <p>Detects blocked or repaired canal routes and shows whether each field remains reachable.</p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon-wrap">📈</div>
+              <h3>Live Reporting</h3>
+              <p>Displays pending requests, history logs, and water usage for transparent decision-making.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="section highlight-panel">
+        <div class="container highlight-wrap">
+          <div class="image-card" aria-label="Farm field illustration"></div>
+
+          <div>
+            <span class="eyebrow" style="background: rgba(29,111,66,0.08); color: var(--primary); border: none;">Operational flow</span>
+            <h2 style="margin: 18px 0 14px; font-size: clamp(2rem, 3vw, 2.7rem);">From reservoir data to field-level action.</h2>
+            <p style="color: var(--muted); margin: 0;">
+              The infrastructure combines crop science, network routing, and irrigation policy into a single system that helps manage scarce water resources responsibly.
+            </p>
+
+            <ul class="details-list">
+              <li><span>1</span><div><strong>Collect field data</strong><p>Capture crop type, farmer details, and moisture conditions.</p></div></li>
+              <li><span>2</span><div><strong>Prioritize requests</strong><p>Rank routine and drought-relief requests by urgency and crop priority.</p></div></li>
+              <li><span>3</span><div><strong>Deliver water smartly</strong><p>Monitor reachability and allocate limited water with clear records.</p></div></li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <div class="container">
+          <div class="section-heading">
+            <span class="eyebrow" style="background: var(--accent-soft); color: #9b7400; border: none;">Allocation rules</span>
+            <h2>Transparent rules for every water request.</h2>
+          </div>
+
+          <div class="stats-grid">
+            <div class="metric-copy">
+              <strong>1 → 2 → 3</strong>
+              <p>High, medium, and low crop priorities are handled in that order.</p>
+            </div>
+            <div class="metric-copy">
+              <strong>Dry first</strong>
+              <p>When priorities match, the lower soil-moisture field is processed first.</p>
+            </div>
+            <div class="metric-copy">
+              <strong>Reachable</strong>
+              <p>Water is allocated only when working canals connect the reservoir to a field.</p>
+            </div>
+            <div class="metric-copy">
+              <strong>Partial</strong>
+              <p>Available water can be allocated while the remainder stays pending.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container">
+        <p>© <span id="year"></span> AgriFlow. Smart irrigation for resilient agriculture.</p>
+      </div>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
