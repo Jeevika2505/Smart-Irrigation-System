@@ -49,11 +49,21 @@
               <label>Field ID<input name="fieldId" required maxlength="30" /></label>
               <label>Farmer Name<input name="farmerName" required /></label>
               <label>Farmer Password<input name="password" type="password" required /></label>
-              <label>Crop Name<input name="cropName" required /></label>
-              <label>Crop Priority
-                <select name="priority" required>
-                  <option value="">Choose priority</option><option value="1">1 — High</option>
-                  <option value="2">2 — Medium</option><option value="3">3 — Low</option>
+              <label>Crop Name
+                <select name="cropName" required>
+                  <option value="">Choose crop</option>
+                  <option value="Paddy (Rice)">Paddy (Rice) — Priority 1 (High)</option>
+                  <option value="Sugarcane">Sugarcane — Priority 1 (High)</option>
+                  <option value="Banana">Banana — Priority 1 (High)</option>
+                  <option value="Cotton">Cotton — Priority 2 (Medium)</option>
+                  <option value="Maize">Maize — Priority 2 (Medium)</option>
+                  <option value="Tomato">Tomato — Priority 2 (Medium)</option>
+                  <option value="Groundnut">Groundnut — Priority 2 (Medium)</option>
+                  <option value="Turmeric">Turmeric — Priority 2 (Medium)</option>
+                  <option value="Millets">Millets — Priority 3 (Low)</option>
+                  <option value="Pulses">Pulses — Priority 3 (Low)</option>
+                  <option value="Sorghum (Cholam)">Sorghum (Cholam) — Priority 3 (Low)</option>
+                  <option value="Sesame (Ellu)">Sesame (Ellu) — Priority 3 (Low)</option>
                 </select>
               </label>
               <label>Soil Moisture (%)<input name="moisture" type="number" min="0" max="100" step="0.1" required /></label>

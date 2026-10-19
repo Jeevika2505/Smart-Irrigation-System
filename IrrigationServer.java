@@ -331,7 +331,7 @@ private static Connection getDatabaseConnection() throws SQLException {
     String password = input.getOrDefault("password", "");
     String cropName = value(input, "cropName").trim();
 
-    int priority = integer(input, "priority");
+    int priority = cropPriority(cropName);
     double moisture = number(input, "moisture");
 
     if (id.isEmpty() || farmerName.isEmpty()
@@ -344,12 +344,6 @@ private static Connection getDatabaseConnection() throws SQLException {
     if (state.fields.containsKey(id)) {
         throw new IllegalArgumentException(
             "This Field ID is already registered."
-        );
-    }
-
-    if (priority < 1 || priority > 3) {
-        throw new IllegalArgumentException(
-            "Crop priority must be 1, 2, or 3."
         );
     }
 
@@ -393,6 +387,30 @@ private static Connection getDatabaseConnection() throws SQLException {
         );
     }
 }
+
+    private static int cropPriority(String cropName) {
+        switch (cropName.toLowerCase(Locale.ROOT)) {
+            case "paddy (rice)":
+            case "sugarcane":
+            case "banana":
+                return 1;
+            case "cotton":
+            case "maize":
+            case "tomato":
+            case "groundnut":
+            case "turmeric":
+                return 2;
+            case "millets":
+            case "pulses":
+            case "sorghum (cholam)":
+            case "sesame (ellu)":
+                return 3;
+            default:
+                throw new IllegalArgumentException(
+                    "Choose a crop from the supported crop list."
+                );
+        }
+    }
 
     private static Object adminOverview() {
         List<Object> fields = new ArrayList<>();

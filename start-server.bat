@@ -7,4 +7,8 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-java -cp build IrrigationServer
+java -cp "build;lib\mysql-connector-j-26.7.0.jar" IrrigationServer
+if errorlevel 1 (
+  echo Java backend stopped with an error.
+  pause
+)
