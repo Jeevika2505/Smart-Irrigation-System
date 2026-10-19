@@ -11,6 +11,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class IrrigationServer {
     private static final int PORT = 8080;
@@ -18,9 +23,15 @@ public class IrrigationServer {
     private static final Path DATA_FILE = ROOT.resolve("irrigation-data.ser");
     private static final Map<String, Session> SESSIONS = new ConcurrentHashMap<>();
     private static State state;
-
+         
     public static void main(String[] args) throws Exception {
         state = loadState();
+        try (Connection connection = getDatabaseConnection()) {
+        System.out.println("MySQL Database Connected Successfully!");
+    } catch (SQLException e) {
+        System.out.println("MySQL Connection Failed!");
+        e.printStackTrace();
+    }
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", PORT), 0);
         server.createContext("/api/", IrrigationServer::handleApi);
         server.createContext("/", IrrigationServer::serveStatic);
@@ -28,6 +39,15 @@ public class IrrigationServer {
         server.start();
         System.out.println("AgriFlow running at http://localhost:" + PORT);
     }
+    
+private static Connection getDatabaseConnection() throws SQLException {
+    String url = "jdbc:mysql://localhost:3306/irrigation_db";
+    String username = "root";
+    String password = "";
+
+    return DriverManager.getConnection(url, username, password);
+}
+
 
     private static void handleApi(HttpExchange exchange) throws IOException {
         String origin = exchange.getRequestHeaders().getFirst("Origin");
@@ -75,26 +95,62 @@ public class IrrigationServer {
     }
 
     private static Object login(Map<String, String> input) {
-        String role = value(input, "role");
-        String token = UUID.randomUUID().toString();
-        if ("admin".equals(role)) {
-            if (!"admin".equals(input.get("username")) || !"admin123".equals(input.get("password"))) {
-                throw new ApiException(401, "Incorrect admin username or password.");
-            }
-            SESSIONS.put(token, new Session(token, "admin", null));
-        } else if ("farmer".equals(role)) {
-            String fieldId = normalizeId(input.get("fieldId"));
-            Field field = state.fields.get(fieldId);
-            if (field == null || !field.matchesPassword(input.get("password"))) {
-                throw new ApiException(401, "Invalid field ID or farmer password.");
-            }
-            SESSIONS.put(token, new Session(token, "farmer", fieldId));
-        } else {
-            throw new ApiException(400, "Choose admin or farmer login.");
+
+    String role = value(input, "role");
+    String token = UUID.randomUUID().toString();
+
+    if ("admin".equals(role)) {
+
+        if (!"admin".equals(input.get("username"))
+                || !"admin123".equals(input.get("password"))) {
+            throw new ApiException(
+                401, "Incorrect admin username or password."
+            );
         }
-        return map("token", token, "role", role);
+
+        SESSIONS.put(token, new Session(token, "admin", null));
+
+    } else if ("farmer".equals(role)) {
+
+        String fieldId = normalizeId(input.get("fieldId"));
+        String password = input.getOrDefault("password", "");
+
+        try (Connection conn = getDatabaseConnection()) {
+
+            String sql = "SELECT farmer_name FROM farmers "
+                       + "WHERE username = ? AND field_id = ? "
+                       + "AND password = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                ps.setString(1, fieldId);
+                ps.setString(2, fieldId);
+                ps.setString(3, password);
+
+                try (ResultSet rs = ps.executeQuery()) {
+
+                    if (!rs.next()) {
+                        throw new ApiException(
+                            401, "Invalid field ID or farmer password."
+                        );
+                    }
+                }
+            }
+
+            SESSIONS.put(token, new Session(token, "farmer", fieldId));
+
+        } catch (SQLException e) {
+            throw new RuntimeException(
+                "Database login failed: " + e.getMessage(), e
+            );
+        }
+
+    } else {
+        throw new ApiException(400, "Choose admin or farmer login.");
     }
 
+    return map("token", token, "role", role);
+}
     private static Object handleAdmin(String action, String method, Map<String, String> input) {
         synchronized (state) {
             switch (action) {
@@ -155,47 +211,188 @@ public class IrrigationServer {
         }
     }
 
-    private static Object handleFarmer(String action, String method, Map<String, String> input, Session session) {
-        synchronized (state) {
-            if ("me".equals(action) && "GET".equals(method)) {
-                Field field = state.fields.get(session.fieldId);
-                List<Object> ownRequests = new ArrayList<>();
-                for (IrrigationRequest request : state.requests) {
-                    if (request.fieldId.equals(session.fieldId)) ownRequests.add(requestView(request));
+    private static Object handleFarmer(
+        String action,
+        String method,
+        Map<String, String> input,
+        Session session) {
+
+    synchronized (state) {
+
+        if ("me".equals(action) && "GET".equals(method)) {
+
+            Field field = state.fields.get(session.fieldId);
+            List<Object> ownRequests = new ArrayList<>();
+
+            for (IrrigationRequest request : state.requests) {
+                if (request.fieldId.equals(session.fieldId)) {
+                    ownRequests.add(requestView(request));
                 }
-                return map("field", fieldView(field), "requests", ownRequests, "reservoir", state.reservoir,
-                    "reachable", isReachable(session.fieldId));
             }
-            if ("request".equals(action) && "POST".equals(method)) {
-                double amount = number(input, "amount");
-                if (amount <= 0) throw new IllegalArgumentException("Requested water must be greater than zero.");
-                String type = value(input, "type");
-                if (!"Routine".equals(type) && !"Drought Relief".equals(type)) throw new IllegalArgumentException("Invalid request type.");
-                String id = String.format(Locale.ROOT, "R%03d", state.nextRequestNumber++);
-                state.requests.add(new IrrigationRequest(id, session.fieldId, amount, type));
-                saveState();
-                return map("message", "Irrigation request submitted.", "requestId", id);
-            }
-            throw new ApiException(404, "Farmer endpoint not found.");
+
+            return map(
+                "field", fieldView(field),
+                "requests", ownRequests,
+                "reservoir", state.reservoir,
+                "reachable", isReachable(session.fieldId)
+            );
         }
+
+        if ("request".equals(action) && "POST".equals(method)) {
+
+            double amount = number(input, "amount");
+
+            if (amount <= 0) {
+                throw new IllegalArgumentException(
+                    "Requested water must be greater than zero."
+                );
+            }
+
+            String type = value(input, "type");
+
+            if (!"Routine".equals(type)
+                    && !"Drought Relief".equals(type)) {
+                throw new IllegalArgumentException(
+                    "Invalid request type."
+                );
+            }
+
+            String id;
+
+            try (Connection conn = getDatabaseConnection()) {
+
+                String sql =
+                    "INSERT INTO irrigation_requests "
+                    + "(farmer_id, field_name, water_required, "
+                    + "status, request_type, allocated_water) "
+                    + "SELECT farmer_id, ?, ?, 'PENDING', ?, 0 "
+                    + "FROM farmers WHERE field_id = ?";
+
+                try (PreparedStatement ps =
+                        conn.prepareStatement(
+                            sql,
+                            java.sql.Statement.RETURN_GENERATED_KEYS)) {
+
+                    ps.setString(1, session.fieldId);
+                    ps.setDouble(2, amount);
+                    ps.setString(3, type);
+                    ps.setString(4, session.fieldId);
+
+                    int rows = ps.executeUpdate();
+
+                    if (rows == 0) {
+                        throw new ApiException(
+                            404,
+                            "Farmer not found in database. Add the farmer first."
+                        );
+                    }
+
+                    try (ResultSet rs = ps.getGeneratedKeys()) {
+                        if (rs.next()) {
+                            id = "R" + String.format(
+                                Locale.ROOT, "%03d", rs.getInt(1)
+                            );
+                        } else {
+                            throw new SQLException(
+                                "Could not get request ID."
+                            );
+                        }
+                    }
+                }
+
+            } catch (SQLException e) {
+                throw new RuntimeException(
+                    "Unable to save irrigation request: "
+                    + e.getMessage(), e
+                );
+            }
+
+            state.requests.add(
+                new IrrigationRequest(
+                    id, session.fieldId, amount, type
+                )
+            );
+
+            saveState();
+
+            return map(
+                "message", "Irrigation request submitted.",
+                "requestId", id
+            );
+        }
+
+        throw new ApiException(404, "Farmer endpoint not found.");
+    }
+}
+    private static void addField(Map<String, String> input) {
+
+    String id = normalizeId(value(input, "fieldId"));
+    String farmerName = value(input, "farmerName").trim();
+    String password = input.getOrDefault("password", "");
+    String cropName = value(input, "cropName").trim();
+
+    int priority = integer(input, "priority");
+    double moisture = number(input, "moisture");
+
+    if (id.isEmpty() || farmerName.isEmpty()
+            || password.isEmpty() || cropName.isEmpty()) {
+        throw new IllegalArgumentException(
+            "Complete all field details."
+        );
     }
 
-    private static void addField(Map<String, String> input) {
-        String id = normalizeId(value(input, "fieldId"));
-        String farmerName = value(input, "farmerName").trim();
-        String password = input.getOrDefault("password", "");
-        String cropName = value(input, "cropName").trim();
-        int priority = integer(input, "priority");
-        double moisture = number(input, "moisture");
-        if (id.isEmpty() || farmerName.isEmpty() || password.isEmpty() || cropName.isEmpty()) {
-            throw new IllegalArgumentException("Complete all field details.");
-        }
-        if (state.fields.containsKey(id)) throw new IllegalArgumentException("This Field ID is already registered.");
-        if (priority < 1 || priority > 3) throw new IllegalArgumentException("Crop priority must be 1, 2, or 3.");
-        if (moisture < 0 || moisture > 100) throw new IllegalArgumentException("Soil moisture must be between 0 and 100.");
-        state.fields.put(id, new Field(id, farmerName, password, cropName, priority, moisture));
-        saveState();
+    if (state.fields.containsKey(id)) {
+        throw new IllegalArgumentException(
+            "This Field ID is already registered."
+        );
     }
+
+    if (priority < 1 || priority > 3) {
+        throw new IllegalArgumentException(
+            "Crop priority must be 1, 2, or 3."
+        );
+    }
+
+    if (moisture < 0 || moisture > 100) {
+        throw new IllegalArgumentException(
+            "Soil moisture must be between 0 and 100."
+        );
+    }
+
+    try (Connection conn = getDatabaseConnection()) {
+
+        String sql = "INSERT INTO farmers "
+            + "(farmer_name, username, password, field_id, "
+            + "crop_name, priority, moisture) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+            ps.setString(1, farmerName);
+            ps.setString(2, id);
+            ps.setString(3, password);
+            ps.setString(4, id);
+            ps.setString(5, cropName);
+            ps.setInt(6, priority);
+            ps.setDouble(7, moisture);
+
+            ps.executeUpdate();
+        }
+
+        state.fields.put(
+            id,
+            new Field(id, farmerName, password,
+                      cropName, priority, moisture)
+        );
+
+        saveState();
+
+    } catch (SQLException e) {
+        throw new RuntimeException(
+            "Unable to save farmer to database: " + e.getMessage(), e
+        );
+    }
+}
 
     private static Object adminOverview() {
         List<Object> fields = new ArrayList<>();
@@ -236,32 +433,93 @@ public class IrrigationServer {
     }
 
     private static void allocateWater() {
-        List<IrrigationRequest> pending = new ArrayList<>();
-        for (IrrigationRequest request : state.requests) if (!request.completed()) pending.add(request);
-        pending.sort((left, right) -> {
-            int result = Integer.compare(requestPriority(left), requestPriority(right));
-            if (result != 0) return result;
-            result = Double.compare(state.fields.get(left.fieldId).moisture, state.fields.get(right.fieldId).moisture);
-            return result != 0 ? result : left.id.compareTo(right.id);
-        });
+
+    List<IrrigationRequest> pending = new ArrayList<>();
+
+    for (IrrigationRequest request : state.requests) {
+        if (!request.completed()) {
+            pending.add(request);
+        }
+    }
+
+    pending.sort((left, right) -> {
+        int result = Integer.compare(
+            requestPriority(left), requestPriority(right)
+        );
+
+        if (result != 0) return result;
+
+        result = Double.compare(
+            state.fields.get(left.fieldId).moisture,
+            state.fields.get(right.fieldId).moisture
+        );
+
+        return result != 0 ? result : left.id.compareTo(right.id);
+    });
+
+    try (Connection conn = getDatabaseConnection()) {
+
         for (IrrigationRequest request : pending) {
+
             if (state.reservoir <= 0) break;
+
             if (!isReachable(request.fieldId)) {
-                state.history.add(request.id + " | Field: " + request.fieldId + " | Status: Unreachable - Pending");
+                state.history.add(
+                    request.id + " | Field: " + request.fieldId
+                    + " | Status: Unreachable - Pending"
+                );
                 continue;
             }
+
             double remaining = request.requested - request.allocated;
             double amount = Math.min(remaining, state.reservoir);
-            if (state.reservoir < remaining) amount = Math.min(amount, remaining / 2.0);
+
+            if (state.reservoir < remaining) {
+                amount = Math.min(amount, remaining / 2.0);
+            }
+
             if (amount <= 0) continue;
+
             state.reservoir -= amount;
             request.allocated += amount;
-            String status = request.completed() ? "Completed" : "Partially Allocated - Pending";
-            state.history.add(request.id + " | Field: " + request.fieldId + " | Allocated: " +
-                amount + " litres | Status: " + status);
+
+            String status = request.completed()
+                ? "Completed"
+                : "Partially Allocated - Pending";
+
+            state.history.add(
+                request.id + " | Field: " + request.fieldId
+                + " | Allocated: " + amount
+                + " litres | Status: " + status
+            );
+
+            String sql =
+                "UPDATE irrigation_requests "
+                + "SET allocated_water = ?, status = ? "
+                + "WHERE request_id = ?";
+
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+
+                ps.setDouble(1, request.allocated);
+                ps.setString(2, status);
+                ps.setInt(
+                    3,
+                    Integer.parseInt(request.id.substring(1))
+                );
+
+                ps.executeUpdate();
+            }
         }
+
         saveState();
+
+    } catch (SQLException e) {
+        throw new RuntimeException(
+            "Water allocation database update failed: "
+            + e.getMessage(), e
+        );
     }
+}
 
     private static int requestPriority(IrrigationRequest request) {
         return "Drought Relief".equals(request.type) ? 1 : state.fields.get(request.fieldId).priority;

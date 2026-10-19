@@ -9,6 +9,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const year = document.getElementById('year');
   if (year) year.textContent = new Date().getFullYear();
 
+  initializeLoginSwitcher();
+
   document.querySelectorAll('.logout-link').forEach((link) => {
     link.addEventListener('click', async (event) => {
       event.preventDefault();
@@ -53,6 +55,40 @@ document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('admin-dashboard')) initializeAdminDashboard();
   if (document.getElementById('farmer-dashboard')) initializeFarmerDashboard();
 });
+
+function initializeLoginSwitcher() {
+  const switcher = document.getElementById('login-role-switch');
+  if (!switcher) return;
+
+  const panels = Array.from(document.querySelectorAll('[data-login-panel]'));
+  const buttons = Array.from(switcher.querySelectorAll('[data-login-target]'));
+  const activate = (panelId, updateHash = false) => {
+    const activePanel = panels.find((panel) => panel.id === panelId);
+    if (!activePanel) return;
+
+    panels.forEach((panel) => {
+      panel.hidden = panel !== activePanel;
+    });
+    buttons.forEach((button) => {
+      const selected = button.dataset.loginTarget === panelId;
+      button.setAttribute('aria-pressed', String(selected));
+      button.classList.toggle('active', selected);
+    });
+
+    if (updateHash) window.history.replaceState(null, '', `#${panelId}`);
+  };
+
+  const initialPanel = panels.find((panel) => panel.id === window.location.hash.slice(1));
+  activate(initialPanel ? initialPanel.id : 'admin-login');
+
+  buttons.forEach((button) => {
+    button.addEventListener('click', () => activate(button.dataset.loginTarget, true));
+  });
+
+  window.addEventListener('hashchange', () => {
+    activate(window.location.hash.slice(1));
+  });
+}
 
 async function api(path, method = 'GET', data = null, authenticated = true) {
   const headers = {};
