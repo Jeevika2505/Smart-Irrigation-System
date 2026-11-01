@@ -266,7 +266,7 @@ async function renderAdmin() {
   renderFields(data.fields);
   renderRequests(data.requests, 'admin-request-rows', true);
   renderRequests(data.pendingRequests, 'pending-request-rows', true);
-  renderCanals(data.canals);
+  renderCanals(data.canals, data.fields);
   renderHistory(data.history);
   const fieldOptions = data.fields.map((field) => `<option value="${escapeHtml(field.fieldId)}">${escapeHtml(field.fieldId)} — ${escapeHtml(field.farmerName)}</option>`).join('');
   document.getElementById('moisture-field').innerHTML = `<option value="">Choose field</option>${fieldOptions}`;
@@ -297,13 +297,108 @@ function renderRequests(requests, target, includeFarmer, includeField = false) {
   document.getElementById(target).innerHTML = rows || `<tr><td colspan="${colspan}">No irrigation requests.</td></tr>`;
 }
 
-function renderCanals(canals) {
+function renderCanals(canals, fields) {
   const rows = canals.map((canal) => `<tr>
     <td>${canal.number}</td><td>${escapeHtml(canal.from)} ↔ ${escapeHtml(canal.to)}</td>
     <td><span class="status-badge ${canal.working ? 'status-good' : 'status-alert'}">${canal.working ? 'Working' : 'Blocked'}</span></td>
     <td><button type="button" class="small-button" data-canal-number="${canal.number}" data-working="${!canal.working}">${canal.working ? 'Block' : 'Restore'}</button></td>
   </tr>`).join('');
   document.getElementById('canal-rows').innerHTML = rows || '<tr><td colspan="4">No canals added yet.</td></tr>';
+  renderCanalMap(canals, fields);
+}
+
+function renderCanalMap(canals, fields) {
+  const nodeIds = ['RESERVOIR', ...fields.map((field) => field.fieldId)];
+  const adjacency = new Map(nodeIds.map((id) => [id, []]));
+  canals.forEach((canal) => {
+    if (!canal.working || !adjacency.has(canal.from) || !adjacency.has(canal.to)) return;
+    adjacency.get(canal.from).push(canal.to);
+    adjacency.get(canal.to).push(canal.from);
+  });
+
+  const distances = new Map([['RESERVOIR', 0]]);
+  const queue = ['RESERVOIR'];
+  for (let index = 0; index < queue.length; index += 1) {
+    const current = queue[index];
+    adjacency.get(current).forEach((neighbor) => {
+      if (distances.has(neighbor)) return;
+      distances.set(neighbor, distances.get(current) + 1);
+      queue.push(neighbor);
+    });
+  }
+
+  const furthestReachable = Math.max(0, ...distances.values());
+  const layers = new Map();
+  fields.forEach((field) => {
+    const depth = distances.get(field.fieldId) ?? furthestReachable + 1;
+    if (!layers.has(depth)) layers.set(depth, []);
+    layers.get(depth).push(field.fieldId);
+  });
+
+  const maxDepth = Math.max(1, ...layers.keys());
+  const largestLayer = Math.max(1, ...Array.from(layers.values(), (layer) => layer.length));
+  const width = Math.max(880, 260 + maxDepth * 210);
+  const height = Math.max(360, largestLayer * 96 + 80);
+  const positions = new Map([['RESERVOIR', { x: 110, y: height / 2 }]]);
+
+  layers.forEach((layer, depth) => {
+    layer.forEach((id, index) => {
+      positions.set(id, {
+        x: 110 + depth * 210,
+        y: 48 + ((index + 1) * (height - 96)) / (layer.length + 1)
+      });
+    });
+  });
+
+  const links = canals.map((canal) => {
+    const from = positions.get(canal.from);
+    const to = positions.get(canal.to);
+    if (!from || !to) return '';
+
+    const dx = to.x - from.x;
+    const dy = to.y - from.y;
+    const fromScale = Math.min(68 / Math.abs(dx || Number.EPSILON), 29 / Math.abs(dy || Number.EPSILON));
+    const toScale = Math.min(68 / Math.abs(dx || Number.EPSILON), 29 / Math.abs(dy || Number.EPSILON));
+    const x1 = from.x + dx * fromScale;
+    const y1 = from.y + dy * fromScale;
+    const x2 = to.x - dx * toScale;
+    const y2 = to.y - dy * toScale;
+    const labelX = (x1 + x2) / 2;
+    const labelY = (y1 + y2) / 2;
+    const status = canal.working ? 'Working' : 'Blocked';
+
+    return `<g class="canal-link ${canal.working ? 'is-working' : 'is-blocked'}">
+      <title>Canal ${canal.number}: ${escapeHtml(canal.from)} to ${escapeHtml(canal.to)} - ${status}</title>
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
+      <g transform="translate(${labelX} ${labelY})">
+        <rect x="-19" y="-11" width="38" height="22" rx="8"></rect>
+        <text text-anchor="middle" dominant-baseline="central">C${canal.number}</text>
+      </g>
+    </g>`;
+  }).join('');
+
+  const nodes = nodeIds.map((id) => {
+    const position = positions.get(id);
+    const isReservoir = id === 'RESERVOIR';
+    const label = id.length > 18 ? `${id.slice(0, 16)}...` : id;
+    return `<g class="canal-map-node ${isReservoir ? 'is-reservoir' : 'is-field'}" transform="translate(${position.x} ${position.y})">
+      <title>${escapeHtml(id)}</title>
+      <rect x="${isReservoir ? -72 : -68}" y="${isReservoir ? -31 : -28}" width="${isReservoir ? 144 : 136}" height="${isReservoir ? 62 : 56}" rx="14"></rect>
+      <text text-anchor="middle" dominant-baseline="central">${escapeHtml(label)}</text>
+    </g>`;
+  }).join('');
+
+  const map = document.getElementById('canal-map');
+  map.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  map.setAttribute('width', width);
+  map.setAttribute('height', height);
+  map.setAttribute('aria-label', `Canal network map with ${canals.length} connections and ${fields.length} fields`);
+  map.innerHTML = `${links}${nodes}`;
+
+  const emptyMessage = document.getElementById('canal-map-empty');
+  emptyMessage.textContent = canals.length
+    ? ''
+    : 'No canal connections yet. Add a connection below to map the irrigation network.';
 }
 
 function renderHistory(history) {
