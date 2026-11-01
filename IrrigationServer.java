@@ -475,58 +475,81 @@ private static Connection getDatabaseConnection() throws SQLException {
         return result != 0 ? result : left.id.compareTo(right.id);
     });
 
-    try (Connection conn = getDatabaseConnection()) {
-
-        for (IrrigationRequest request : pending) {
-
-            if (state.reservoir <= 0) break;
-
-            if (!isReachable(request.fieldId)) {
-                state.history.add(
-                    request.id + " | Field: " + request.fieldId
-                    + " | Status: Unreachable - Pending"
-                );
-                continue;
-            }
-
-            double remaining = request.requested - request.allocated;
-            double amount = Math.min(remaining, state.reservoir);
-
-            if (state.reservoir < remaining) {
-                amount = Math.min(amount, remaining / 2.0);
-            }
-
-            if (amount <= 0) continue;
-
-            state.reservoir -= amount;
-            request.allocated += amount;
-
-            String status = request.completed()
-                ? "Completed"
-                : "Partially Allocated - Pending";
-
+    List<IrrigationRequest> reachable = new ArrayList<>();
+    for (IrrigationRequest request : pending) {
+        if (isReachable(request.fieldId)) {
+            reachable.add(request);
+        } else {
             state.history.add(
                 request.id + " | Field: " + request.fieldId
-                + " | Allocated: " + amount
-                + " litres | Status: " + status
+                + " | Status: Unreachable - Pending"
             );
+        }
+    }
 
-            String sql =
-                "UPDATE irrigation_requests "
-                + "SET allocated_water = ?, status = ? "
-                + "WHERE request_id = ?";
+    try (Connection conn = getDatabaseConnection()) {
 
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        int groupStart = 0;
+        while (groupStart < reachable.size() && state.reservoir > 0) {
+            int priority = requestPriority(reachable.get(groupStart));
+            int groupEnd = groupStart + 1;
+            while (groupEnd < reachable.size()
+                    && requestPriority(reachable.get(groupEnd)) == priority) {
+                groupEnd++;
+            }
 
-                ps.setDouble(1, request.allocated);
-                ps.setString(2, status);
-                ps.setInt(
-                    3,
-                    Integer.parseInt(request.id.substring(1))
+            double groupDemand = 0;
+            for (int i = groupStart; i < groupEnd; i++) {
+                IrrigationRequest request = reachable.get(i);
+                groupDemand += request.requested - request.allocated;
+            }
+
+            double groupAllocation = Math.min(state.reservoir, groupDemand);
+            double remainingAllocation = groupAllocation;
+
+            for (int i = groupStart; i < groupEnd; i++) {
+                IrrigationRequest request = reachable.get(i);
+                double remaining = request.requested - request.allocated;
+                double amount = i == groupEnd - 1
+                    ? Math.min(remaining, remainingAllocation)
+                    : Math.min(
+                        remaining,
+                        groupAllocation * remaining / groupDemand
+                    );
+
+                if (amount <= 0) continue;
+
+                remainingAllocation -= amount;
+                state.reservoir -= amount;
+                request.allocated += amount;
+
+                String status = request.completed()
+                    ? "Completed"
+                    : "Partially Allocated - Pending";
+
+                state.history.add(
+                    request.id + " | Field: " + request.fieldId
+                    + " | Allocated: " + amount
+                    + " litres | Status: " + status
                 );
 
-                ps.executeUpdate();
+                String sql =
+                    "UPDATE irrigation_requests "
+                    + "SET allocated_water = ?, status = ? "
+                    + "WHERE request_id = ?";
+
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setDouble(1, request.allocated);
+                    ps.setString(2, status);
+                    ps.setInt(
+                        3,
+                        Integer.parseInt(request.id.substring(1))
+                    );
+                    ps.executeUpdate();
+                }
             }
+
+            groupStart = groupEnd;
         }
 
         saveState();
