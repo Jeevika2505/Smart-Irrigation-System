@@ -102,7 +102,7 @@
           </div>
         </section>
 
-        <section class="panel-grid" id="canals">
+        <section class="panel-grid canal-layout" id="canals">
           <div class="panel canal-map-panel">
             <div class="dashboard-topbar">
               <div>
@@ -120,15 +120,7 @@
             </div>
             <p id="canal-map-empty" class="form-hint"></p>
           </div>
-          <div class="panel">
-            <h3>Add Canal Connection</h3>
-            <form id="canal-form" class="dashboard-form">
-              <label>From<select id="canal-from" name="from" required><option value="RESERVOIR">RESERVOIR</option></select></label>
-              <label>To<select id="canal-to" name="to" required><option value="">Choose node</option></select></label>
-              <button class="button button-primary" type="submit">Add Canal</button>
-            </form>
-          </div>
-          <div class="panel" id="canal-table">
+          <div class="panel canal-connections-panel" id="canal-table">
             <h3>Canal Connections & Controls</h3>
             <div class="table-wrap">
               <table>
@@ -137,6 +129,14 @@
               </table>
             </div>
             <form id="canal-actions" class="hidden-form" aria-hidden="true"><button type="submit">Update canal</button></form>
+          </div>
+          <div class="panel canal-add-panel">
+            <h3>Add Canal Connection</h3>
+            <form id="canal-form" class="dashboard-form">
+              <label>From<select id="canal-from" name="from" required><option value="RESERVOIR">RESERVOIR</option></select></label>
+              <label>To<select id="canal-to" name="to" required><option value="">Choose node</option></select></label>
+              <button class="button button-primary" type="submit">Add Canal</button>
+            </form>
           </div>
         </section>
 

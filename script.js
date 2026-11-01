@@ -337,15 +337,15 @@ function renderCanalMap(canals, fields) {
 
   const maxDepth = Math.max(1, ...layers.keys());
   const largestLayer = Math.max(1, ...Array.from(layers.values(), (layer) => layer.length));
-  const width = Math.max(880, 260 + maxDepth * 210);
-  const height = Math.max(360, largestLayer * 96 + 80);
-  const positions = new Map([['RESERVOIR', { x: 110, y: height / 2 }]]);
+  const width = Math.max(800, 200 + maxDepth * 175);
+  const height = Math.max(320, largestLayer * 76 + 56);
+  const positions = new Map([['RESERVOIR', { x: 100, y: height / 2 }]]);
 
   layers.forEach((layer, depth) => {
     layer.forEach((id, index) => {
       positions.set(id, {
-        x: 110 + depth * 210,
-        y: 48 + ((index + 1) * (height - 96)) / (layer.length + 1)
+        x: 100 + depth * ((width - 200) / maxDepth),
+        y: 28 + ((index + 1) * (height - 56)) / (layer.length + 1)
       });
     });
   });
@@ -357,8 +357,10 @@ function renderCanalMap(canals, fields) {
 
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    const fromScale = Math.min(68 / Math.abs(dx || Number.EPSILON), 29 / Math.abs(dy || Number.EPSILON));
-    const toScale = Math.min(68 / Math.abs(dx || Number.EPSILON), 29 / Math.abs(dy || Number.EPSILON));
+    const fromRadius = canal.from === 'RESERVOIR' ? 64 : 58;
+    const toRadius = canal.to === 'RESERVOIR' ? 64 : 58;
+    const fromScale = Math.min(fromRadius / Math.abs(dx || Number.EPSILON), 23 / Math.abs(dy || Number.EPSILON));
+    const toScale = Math.min(toRadius / Math.abs(dx || Number.EPSILON), 23 / Math.abs(dy || Number.EPSILON));
     const x1 = from.x + dx * fromScale;
     const y1 = from.y + dy * fromScale;
     const x2 = to.x - dx * toScale;
@@ -371,7 +373,7 @@ function renderCanalMap(canals, fields) {
       <title>Canal ${canal.number}: ${escapeHtml(canal.from)} to ${escapeHtml(canal.to)} - ${status}</title>
       <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"></line>
       <g transform="translate(${labelX} ${labelY})">
-        <rect x="-19" y="-11" width="38" height="22" rx="8"></rect>
+        <rect x="-18" y="-10" width="36" height="20" rx="8"></rect>
         <text text-anchor="middle" dominant-baseline="central">C${canal.number}</text>
       </g>
     </g>`;
@@ -380,10 +382,10 @@ function renderCanalMap(canals, fields) {
   const nodes = nodeIds.map((id) => {
     const position = positions.get(id);
     const isReservoir = id === 'RESERVOIR';
-    const label = id.length > 18 ? `${id.slice(0, 16)}...` : id;
+    const label = id.length > 14 ? `${id.slice(0, 11)}...` : id;
     return `<g class="canal-map-node ${isReservoir ? 'is-reservoir' : 'is-field'}" transform="translate(${position.x} ${position.y})">
       <title>${escapeHtml(id)}</title>
-      <rect x="${isReservoir ? -72 : -68}" y="${isReservoir ? -31 : -28}" width="${isReservoir ? 144 : 136}" height="${isReservoir ? 62 : 56}" rx="14"></rect>
+      <rect x="${isReservoir ? -64 : -58}" y="${isReservoir ? -27 : -23}" width="${isReservoir ? 128 : 116}" height="${isReservoir ? 54 : 46}" rx="12"></rect>
       <text text-anchor="middle" dominant-baseline="central">${escapeHtml(label)}</text>
     </g>`;
   }).join('');
