@@ -221,21 +221,37 @@ private static Connection getDatabaseConnection() throws SQLException {
 
         if ("me".equals(action) && "GET".equals(method)) {
 
-            Field field = state.fields.get(session.fieldId);
+            Field field = requireField(session.fieldId);
+            List<Object> farmerFields = new ArrayList<>();
             List<Object> ownRequests = new ArrayList<>();
 
+            for (Field farmerField : state.fields.values()) {
+                if (sameFarmer(field, farmerField)) {
+                    Map<String, Object> view = fieldView(farmerField);
+                    view.put("reachable", isReachable(farmerField.id));
+                    farmerFields.add(view);
+                }
+            }
+
             for (IrrigationRequest request : state.requests) {
-                if (request.fieldId.equals(session.fieldId)) {
+                Field requestField = state.fields.get(request.fieldId);
+                if (requestField != null && sameFarmer(field, requestField)) {
                     ownRequests.add(requestView(request));
                 }
             }
 
             return map(
                 "field", fieldView(field),
+                "fields", farmerFields,
                 "requests", ownRequests,
                 "reservoir", state.reservoir,
-                "reachable", isReachable(session.fieldId)
+                "reachable", isReachable(field.id)
             );
+        }
+
+        if ("crops".equals(action) && "POST".equals(method)) {
+            String fieldId = addFarmerCrop(input, session);
+            return map("message", "Crop added to your field.", "fieldId", fieldId);
         }
 
         if ("request".equals(action) && "POST".equals(method)) {
@@ -257,6 +273,13 @@ private static Connection getDatabaseConnection() throws SQLException {
                 );
             }
 
+            Field ownerField = requireField(session.fieldId);
+            String fieldId = normalizeId(input.getOrDefault("fieldId", session.fieldId));
+            Field requestField = requireField(fieldId);
+            if (!sameFarmer(ownerField, requestField)) {
+                throw new ApiException(403, "You cannot submit a request for this field.");
+            }
+
             String id;
 
             try (Connection conn = getDatabaseConnection()) {
@@ -273,10 +296,10 @@ private static Connection getDatabaseConnection() throws SQLException {
                             sql,
                             java.sql.Statement.RETURN_GENERATED_KEYS)) {
 
-                    ps.setString(1, session.fieldId);
+                    ps.setString(1, fieldId);
                     ps.setDouble(2, amount);
                     ps.setString(3, type);
-                    ps.setString(4, session.fieldId);
+                    ps.setString(4, fieldId);
 
                     int rows = ps.executeUpdate();
 
@@ -309,7 +332,7 @@ private static Connection getDatabaseConnection() throws SQLException {
 
             state.requests.add(
                 new IrrigationRequest(
-                    id, session.fieldId, amount, type
+                    id, fieldId, amount, type
                 )
             );
 
@@ -376,7 +399,7 @@ private static Connection getDatabaseConnection() throws SQLException {
         state.fields.put(
             id,
             new Field(id, farmerName, password,
-                      cropName, priority, moisture)
+                      cropName, priority, moisture, id)
         );
 
         saveState();
@@ -386,6 +409,91 @@ private static Connection getDatabaseConnection() throws SQLException {
             "Unable to save farmer to database: " + e.getMessage(), e
         );
     }
+}
+
+private static String addFarmerCrop(Map<String, String> input, Session session) {
+    Field loggedInField = requireField(session.fieldId);
+    Field ownerField = requireField(farmerOwnerId(loggedInField));
+    List<Field> farmerFields = new ArrayList<>();
+    for (Field field : state.fields.values()) {
+        if (sameFarmer(ownerField, field)) farmerFields.add(field);
+    }
+    if (farmerFields.size() >= 3) {
+        throw new IllegalArgumentException("A field can have up to 3 crops.");
+    }
+
+    String cropName = value(input, "cropName");
+    int priority = cropPriority(cropName);
+    double moisture = number(input, "moisture");
+    if (moisture < 0 || moisture > 100) {
+        throw new IllegalArgumentException("Soil moisture must be between 0 and 100.");
+    }
+
+    String id = "";
+    for (char suffix = 'A'; suffix <= 'Z'; suffix++) {
+        String candidate = ownerField.id + "-" + suffix;
+        if (candidate.length() > 30) {
+            throw new IllegalArgumentException(
+                "Your field ID is too long to create crop IDs. Ask the admin to use a shorter field ID."
+            );
+        }
+        if (!state.fields.containsKey(candidate)) {
+            id = candidate;
+            break;
+        }
+    }
+    if (id.isEmpty()) {
+        throw new IllegalArgumentException("Could not create another crop ID for this field.");
+    }
+
+    String password;
+    try (Connection conn = getDatabaseConnection()) {
+        String passwordSql = "SELECT password FROM farmers WHERE field_id = ?";
+        try (PreparedStatement ps = conn.prepareStatement(passwordSql)) {
+            ps.setString(1, ownerField.id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    throw new ApiException(404, "Farmer account not found in database.");
+                }
+                password = rs.getString("password");
+            }
+        }
+
+        String insertSql = "INSERT INTO farmers "
+            + "(farmer_name, username, password, field_id, crop_name, priority, moisture) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement ps = conn.prepareStatement(insertSql)) {
+            ps.setString(1, ownerField.farmerName);
+            ps.setString(2, id);
+            ps.setString(3, password);
+            ps.setString(4, id);
+            ps.setString(5, cropName);
+            ps.setInt(6, priority);
+            ps.setDouble(7, moisture);
+            ps.executeUpdate();
+        }
+    } catch (SQLException e) {
+        throw new RuntimeException("Unable to save crop to database: " + e.getMessage(), e);
+    }
+
+    state.fields.put(
+        id,
+        new Field(
+            id, ownerField.farmerName, password, cropName, priority, moisture,
+            farmerOwnerId(ownerField)
+        )
+    );
+    state.canals.add(new Canal(ownerField.id, id));
+    saveState();
+    return id;
+}
+
+private static boolean sameFarmer(Field first, Field second) {
+    return farmerOwnerId(first).equals(farmerOwnerId(second));
+}
+
+private static String farmerOwnerId(Field field) {
+    return field.ownerId == null ? field.id : field.ownerId;
 }
 
     private static int cropPriority(String cropName) {
@@ -792,14 +900,16 @@ private static Connection getDatabaseConnection() throws SQLException {
     private static final class Field implements Serializable {
         private static final long serialVersionUID = 1L;
         final String id;
+        String ownerId;
         final String farmerName;
         final byte[] passwordSalt;
         final byte[] passwordHash;
         final String cropName;
         final int priority;
         double moisture;
-        Field(String id, String farmerName, String password, String cropName, int priority, double moisture) {
+        Field(String id, String farmerName, String password, String cropName, int priority, double moisture, String ownerId) {
             this.id = id; this.farmerName = farmerName;
+            this.ownerId = ownerId;
             this.passwordSalt = new byte[16];
             new SecureRandom().nextBytes(this.passwordSalt);
             this.passwordHash = IrrigationServer.passwordHash(password, this.passwordSalt);

@@ -284,15 +284,16 @@ function renderFields(fields) {
   document.getElementById('field-rows').innerHTML = rows || '<tr><td colspan="6">No fields registered yet.</td></tr>';
 }
 
-function renderRequests(requests, target, includeFarmer) {
+function renderRequests(requests, target, includeFarmer, includeField = false) {
   const rows = requests.map((request) => `<tr>
     <td>${escapeHtml(request.requestId)}</td>
+    ${includeField && !includeFarmer ? `<td>${escapeHtml(request.fieldId)}</td>` : ''}
     ${includeFarmer ? `<td>${escapeHtml(request.fieldId)}</td><td>${escapeHtml(request.farmerName)}</td>` : ''}
     <td>${escapeHtml(request.type)}</td><td>${request.priority} — ${['', 'High', 'Medium', 'Low'][request.priority]}</td>
     <td>${formatNumber(request.requested)} L</td><td>${formatNumber(request.allocated)} L</td>
     <td>${formatNumber(request.remaining)} L</td><td><span class="status-badge ${request.completed ? 'status-good' : request.allocated > 0 ? 'status-warn' : 'status-alert'}">${escapeHtml(request.status)}</span></td>
   </tr>`).join('');
-  const colspan = includeFarmer ? 9 : 7;
+  const colspan = includeFarmer ? 9 : includeField ? 8 : 7;
   document.getElementById(target).innerHTML = rows || `<tr><td colspan="${colspan}">No irrigation requests.</td></tr>`;
 }
 
@@ -312,18 +313,29 @@ function renderHistory(history) {
 
 async function initializeFarmerDashboard() {
   if (!requireRole('farmer')) return;
-  document.querySelectorAll('[data-request-type]').forEach((form) => {
-    form.addEventListener('submit', (event) => {
-      event.preventDefault();
-      submitForm(form, async () => {
-        const result = await api('/api/farmer/request', 'POST', {
-          amount: form.elements.amount.value,
-          type: form.dataset.requestType
-        });
-        form.reset();
-        showMessage('farmer-message', `${result.message} Request ID: ${result.requestId}`);
-        await renderFarmer();
+  const addCropForm = document.getElementById('add-crop-form');
+  addCropForm.addEventListener('submit', (event) => {
+    event.preventDefault();
+    submitForm(addCropForm, async () => {
+      const result = await api('/api/farmer/crops', 'POST', formData(addCropForm));
+      addCropForm.reset();
+      showMessage('farmer-message', `${result.message} New Field ID: ${result.fieldId}.`);
+      await renderFarmer();
+    });
+  });
+  document.getElementById('farmer-crop-fields').addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-crop-request]');
+    if (!form) return;
+    event.preventDefault();
+    submitForm(form, async () => {
+      const result = await api('/api/farmer/request', 'POST', {
+        amount: form.elements.amount.value,
+        type: form.elements.type.value,
+        fieldId: form.dataset.fieldId
       });
+      form.reset();
+      showMessage('farmer-message', `${result.message} Request ID: ${result.requestId}`);
+      await renderFarmer();
     });
   });
   try {
@@ -336,20 +348,59 @@ async function initializeFarmerDashboard() {
 async function renderFarmer() {
   const data = await api('/api/farmer/me');
   const field = data.field;
+  const fields = data.fields || [field];
   setText('farmer-name', field.farmerName);
-  setText('farmer-detail-name', field.farmerName);
-  setText('farmer-field-id', field.fieldId);
-  setText('farmer-detail-id', field.fieldId);
-  setText('farmer-crop', field.cropName);
-  setText('farmer-detail-crop', field.cropName);
-  setText('farmer-priority', `${field.priority} — ${field.priorityName}`);
-  setText('farmer-moisture', `${formatNumber(field.moisture)}%`);
-  setText('farmer-detail-moisture', `${formatNumber(field.moisture)}%`);
-  setText('farmer-reachability', data.reachable ? 'Reachable' : 'Currently unreachable');
+  setText('farmer-field-count', fields.length);
+  setText('farmer-reachability', `${fields.filter((cropField) => cropField.reachable).length} / ${fields.length}`);
   setText('farmer-reservoir', `${formatNumber(data.reservoir)} L`);
-  renderRequests(data.requests, 'farmer-request-rows', false);
+  renderFarmerCropFields(fields);
+  const addCropForm = document.getElementById('add-crop-form');
+  const cropLimit = document.getElementById('add-crop-limit');
+  const addCropButton = addCropForm.querySelector('button[type="submit"]');
+  const cropLimitReached = fields.length >= 3;
+  addCropButton.disabled = cropLimitReached;
+  addCropForm.querySelectorAll('select, input').forEach((input) => {
+    input.disabled = cropLimitReached;
+  });
+  cropLimit.textContent = cropLimitReached
+    ? 'You have reached the 3-crop limit for this field.'
+    : `${3 - fields.length} additional crop${3 - fields.length === 1 ? '' : 's'} available.`;
+  renderRequests(data.requests, 'farmer-request-rows', false, true);
   setText('farmer-total-requests', data.requests.length);
   setText('farmer-pending-requests', data.requests.filter((request) => !request.completed).length);
+}
+
+function renderFarmerCropFields(fields) {
+  const cards = fields.map((field) => `
+    <article class="crop-field-card">
+      <div class="crop-field-heading">
+        <div>
+          <span class="crop-field-label">Field ID</span>
+          <h4>${escapeHtml(field.fieldId)}</h4>
+        </div>
+        <span class="status-badge ${field.reachable ? 'status-good' : 'status-alert'}">${field.reachable ? 'Reachable' : 'Unreachable'}</span>
+      </div>
+      <dl class="crop-field-details">
+        <div><dt>Crop</dt><dd>${escapeHtml(field.cropName)}</dd></div>
+        <div><dt>Priority</dt><dd>${field.priority} — ${escapeHtml(field.priorityName)}</dd></div>
+        <div><dt>Soil moisture</dt><dd>${formatNumber(field.moisture)}%</dd></div>
+      </dl>
+      <form class="crop-request-form" data-crop-request data-field-id="${escapeHtml(field.fieldId)}">
+        <label>Request type
+          <select name="type" required>
+            <option value="Routine">Routine</option>
+            <option value="Drought Relief">Drought Relief</option>
+          </select>
+        </label>
+        <label>Water quantity (litres)
+          <input name="amount" type="number" min="0.01" step="0.01" required />
+        </label>
+        <button class="button button-primary" type="submit">Request water</button>
+      </form>
+    </article>
+  `).join('');
+  document.getElementById('farmer-crop-fields').innerHTML = cards
+    || '<p>No crop fields are registered yet.</p>';
 }
 
 function formData(form) {

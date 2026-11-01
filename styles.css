@@ -26,7 +26,7 @@ body {
   margin: 0;
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   color: var(--text);
-  background: linear-gradient(180deg, #f4fbf6 0%, #edf7fb 100%);
+  background: #f5f8f6;
   line-height: 1.6;
 }
 
@@ -126,8 +126,8 @@ img {
   display: grid;
   grid-template-columns: 1.2fr 0.8fr;
   align-items: center;
-  min-height: 620px;
-  gap: 36px;
+  min-height: 580px;
+  gap: 48px;
 }
 
 .eyebrow {
@@ -305,6 +305,27 @@ img {
   margin: 0;
 }
 
+.section-eyebrow {
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: none;
+}
+
+.section-eyebrow-accent {
+  background: var(--accent-soft);
+  color: #806000;
+}
+
+.flow-title {
+  margin: 18px 0 14px;
+  font-size: clamp(2rem, 3vw, 2.7rem);
+}
+
+.flow-description {
+  color: var(--muted);
+  margin: 0;
+}
+
 .features-grid,
 .cards-grid,
 .stats-grid,
@@ -333,14 +354,16 @@ img {
 }
 
 .icon-wrap {
-  width: 58px;
-  height: 58px;
-  border-radius: 18px;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
   display: grid;
   place-items: center;
-  margin-bottom: 18px;
-  font-size: 1.6rem;
-  background: linear-gradient(135deg, var(--primary-soft), #dff4e7);
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  background: var(--primary-soft);
   color: var(--primary);
 }
 
@@ -748,6 +771,10 @@ img {
   margin-bottom: 26px;
 }
 
+.farmer-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .stat-box {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid rgba(29, 111, 66, 0.08);
@@ -866,7 +893,9 @@ img {
 }
 
 .dashboard-form input,
-.dashboard-form select {
+.dashboard-form select,
+.crop-request-form input,
+.crop-request-form select {
   width: 100%;
   min-height: 46px;
   border: 1px solid rgba(21, 50, 40, 0.14);
@@ -879,6 +908,99 @@ img {
 
 .dashboard-form button {
   justify-self: start;
+}
+
+.dashboard-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+.form-hint,
+.panel-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.crop-fields-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.crop-field-card {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid rgba(29, 111, 66, 0.1);
+  border-radius: 18px;
+  background: #fbfdfb;
+}
+
+.crop-field-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(21, 50, 40, 0.08);
+}
+
+.crop-field-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crop-field-heading h4 {
+  margin: 2px 0 0;
+  color: var(--primary-dark);
+  font-size: 1.15rem;
+}
+
+.crop-field-details {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0 18px;
+}
+
+.crop-field-details div {
+  min-width: 0;
+}
+
+.crop-field-details dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.crop-field-details dd {
+  margin: 2px 0 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.crop-request-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.crop-request-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.crop-request-form .button {
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 12px;
+  white-space: nowrap;
 }
 
 .inline-forms {
@@ -942,6 +1064,19 @@ img {
   .auth-grid,
   .inline-forms {
     grid-template-columns: 1fr;
+  }
+
+  .farmer-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .crop-request-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .crop-request-form button {
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 }
 
@@ -1177,5 +1312,15 @@ textarea {
 
   .page-hero {
     padding-top: 50px;
+  }
+
+  .farmer-stats,
+  .crop-field-details,
+  .crop-request-form {
+    grid-template-columns: 1fr;
+  }
+
+  .crop-request-form button {
+    grid-column: auto;
   }
 }

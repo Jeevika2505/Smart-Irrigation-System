@@ -27,39 +27,51 @@
             <span class="eyebrow" style="background: rgba(39,95,155,0.08); color: var(--blue); border: none;">Farmer dashboard</span>
             <h1 style="margin: 14px 0 0; font-size: clamp(2rem, 3vw, 2.8rem);">Welcome, <span id="farmer-name">Farmer</span></h1>
           </div>
-          <span class="dashboard-badge badge-farmer">Your field only</span>
+          <span class="dashboard-badge badge-farmer">Your crops</span>
         </div>
 
-        <section class="dashboard-grid">
-          <div class="stat-box farmer-highlight"><small>Field ID</small><strong id="farmer-field-id">—</strong></div>
-          <div class="stat-box farmer-highlight"><small>Crop</small><strong id="farmer-crop">—</strong></div>
-          <div class="stat-box farmer-highlight"><small>Soil Moisture</small><strong id="farmer-moisture">—</strong></div>
-          <div class="stat-box farmer-highlight"><small>Crop Priority</small><strong id="farmer-priority">—</strong></div>
-          <div class="stat-box farmer-highlight"><small>Available Reservoir Water</small><strong id="farmer-reservoir">—</strong></div>
-          <div class="stat-box farmer-highlight"><small>Field Reachability</small><strong id="farmer-reachability">—</strong></div>
+        <section class="dashboard-grid farmer-stats">
+          <div class="stat-box farmer-highlight"><small>Registered crops</small><strong id="farmer-field-count">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Available reservoir water</small><strong id="farmer-reservoir">—</strong></div>
+          <div class="stat-box farmer-highlight"><small>Reachable crop fields</small><strong id="farmer-reachability">—</strong></div>
         </section>
 
         <p id="farmer-message" class="form-message" role="status" aria-live="polite"></p>
 
         <section class="panel-grid" id="my-field">
           <div class="panel">
-            <h3>My Field Details</h3>
-            <div class="summary-box">
-              <div class="summary-row"><span>Farmer Name</span><strong id="farmer-detail-name">Shown above</strong></div>
-              <div class="summary-row"><span>Field ID</span><strong id="farmer-detail-id">Shown above</strong></div>
-              <div class="summary-row"><span>Crop</span><strong id="farmer-detail-crop">Shown above</strong></div>
-              <div class="summary-row"><span>Soil Moisture</span><strong id="farmer-detail-moisture">Shown above</strong></div>
+            <h3>My crop fields</h3>
+            <p class="panel-description">Each crop has its own field ID, priority, and irrigation request.</p>
+            <div id="farmer-crop-fields" class="crop-fields-grid" aria-live="polite">
+              <p>Loading your crop fields…</p>
             </div>
           </div>
           <div class="panel">
-            <h3>Submit Irrigation Request</h3>
-            <form class="dashboard-form" data-request-type="Routine">
-              <label>Routine Water Quantity (litres)<input name="amount" type="number" min="0.01" step="0.01" required /></label>
-              <button class="button button-primary" type="submit">Submit Routine Request</button>
-            </form>
-            <form class="dashboard-form" data-request-type="Drought Relief">
-              <label>Drought Relief Quantity (litres)<input name="amount" type="number" min="0.01" step="0.01" required /></label>
-              <button class="button button-primary" type="submit">Submit Drought Relief Request</button>
+            <h3>Add another crop</h3>
+            <p class="panel-description">Add up to two crops. A separate ID is created automatically and connected to your field.</p>
+            <form id="add-crop-form" class="dashboard-form">
+              <label>Crop name
+                <select name="cropName" required>
+                  <option value="">Choose crop</option>
+                  <option value="Paddy (Rice)">Paddy (Rice) — Priority 1 (High)</option>
+                  <option value="Sugarcane">Sugarcane — Priority 1 (High)</option>
+                  <option value="Banana">Banana — Priority 1 (High)</option>
+                  <option value="Cotton">Cotton — Priority 2 (Medium)</option>
+                  <option value="Maize">Maize — Priority 2 (Medium)</option>
+                  <option value="Tomato">Tomato — Priority 2 (Medium)</option>
+                  <option value="Groundnut">Groundnut — Priority 2 (Medium)</option>
+                  <option value="Turmeric">Turmeric — Priority 2 (Medium)</option>
+                  <option value="Millets">Millets — Priority 3 (Low)</option>
+                  <option value="Pulses">Pulses — Priority 3 (Low)</option>
+                  <option value="Sorghum (Cholam)">Sorghum (Cholam) — Priority 3 (Low)</option>
+                  <option value="Sesame (Ellu)">Sesame (Ellu) — Priority 3 (Low)</option>
+                </select>
+              </label>
+              <label>Soil moisture (%)
+                <input name="moisture" type="number" min="0" max="100" step="0.1" required />
+              </label>
+              <p id="add-crop-limit" class="form-hint"></p>
+              <button class="button button-primary" type="submit">Add crop</button>
             </form>
           </div>
         </section>
@@ -71,8 +83,8 @@
           </div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Request ID</th><th>Type</th><th>Priority</th><th>Requested</th><th>Allocated</th><th>Remaining</th><th>Status</th></tr></thead>
-              <tbody id="farmer-request-rows"><tr><td colspan="7">Loading your requests…</td></tr></tbody>
+              <thead><tr><th>Request ID</th><th>Field ID</th><th>Type</th><th>Priority</th><th>Requested</th><th>Allocated</th><th>Remaining</th><th>Status</th></tr></thead>
+              <tbody id="farmer-request-rows"><tr><td colspan="8">Loading your requests…</td></tr></tbody>
             </table>
           </div>
         </section>
